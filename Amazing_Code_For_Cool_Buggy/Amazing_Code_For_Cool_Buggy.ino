@@ -1,169 +1,175 @@
-//library for servo to be defined and all that stuff
 #include <Servo.h>
 Servo myServo;
 
-//wheel on left
+// Left wheel
 int Ena = 3;
 int In1 = 5;
 int In2 = 6;
 
-//wheel on right
+// Right wheel
 int In3 = 7;
 int In4 = 8;
 int Enb = 9;
 
-//the eyes
-
+// Ultrasonic sensor
 int TRG = 11;
 int ECHO = 12;
 
-
 void setup() {
-  //9600 bits sent per sec
   Serial.begin(9600);
-  //left wheel
+  
+  // Left wheel
   pinMode(Ena, OUTPUT);
   pinMode(In1, OUTPUT);
   pinMode(In2, OUTPUT);
-  //right wheel
+  
+  // Right wheel
   pinMode(Enb, OUTPUT);
   pinMode(In3, OUTPUT);
   pinMode(In4, OUTPUT);
-  //sensor
+  
+  // Sensor
   pinMode(TRG, OUTPUT);
   pinMode(ECHO, INPUT);
-
+  
   myServo.attach(10);
-
+  myServo.write(90); // Start centered
 }
 
-long checkAhead(){
-  //send ultrasonic waves for 10 microseconds, before it just stops
+long checkAhead() {
+  // Send ultrasonic pulse
   digitalWrite(TRG, LOW);
   delayMicroseconds(2);
-  digitalWrite(TRG, LOW);
+  digitalWrite(TRG, HIGH);  // Fixed: was LOW
   delayMicroseconds(10);
   digitalWrite(TRG, LOW);
-  //define the distance and duration for light to get back to the echopin
+  
+  // Measure echo time
   long time = pulseIn(ECHO, HIGH);
   long dis = (time / 2) * 0.0343;
-  //send the chip data we collected
+  
   Serial.print("Distance: ");
   Serial.print(dis);
   Serial.println(" cm");
-
+  
   return dis;
 }
 
-long checkStright(){
-
-  myServo.write(0);
-  delay(1000);
+long checkStraight() {
+  myServo.write(90);  // Center
+  delay(500);
   return checkAhead();
 }
 
-long CheckLeft(){
-
-  myServo.write(90);
-  delay(1000);
-  return checkAhead();
-
+long checkLeft() {
+  myServo.write(180);  // Look left
+  delay(500);
+  long dist = checkAhead();
+  myServo.write(90);  // Return to center
+  delay(300);
+  return dist;
 }
 
-long CheckRight(){
-
-myServo.write(180);
-  delay(1000);
-  return checkAhead();
-
+long checkRight() {
+  myServo.write(0);  // Look right
+  delay(500);
+  long dist = checkAhead();
+  myServo.write(90);  // Return to center
+  delay(300);
+  return dist;
 }
 
+void stopMotors() {
+  digitalWrite(In1, LOW);
+  digitalWrite(In2, LOW);
+  digitalWrite(In3, LOW);
+  digitalWrite(In4, LOW);
+  analogWrite(Ena, 0);
+  analogWrite(Enb, 0);
+}
 
-
-void moveAhead(){
+void moveAhead() {
   Serial.println("Forward...");
-
   digitalWrite(In1, HIGH);
   digitalWrite(In2, LOW);
-  
   digitalWrite(In3, LOW);
   digitalWrite(In4, HIGH);
-  //setting the speed, max is 255
-  analogWrite(Ena, 255);
-  analogWrite(Enb, 255);
+  analogWrite(Ena, 200);  // Slightly reduced for better control
+  analogWrite(Enb, 200);
 }
 
-void moveBack(){
+void moveBack() {
   Serial.println("Backwards...");
-
   digitalWrite(In1, LOW);
   digitalWrite(In2, HIGH);
-  
   digitalWrite(In3, HIGH);
   digitalWrite(In4, LOW);
-  //setting the speed, max is 255
-  analogWrite(Ena, 255);
-  analogWrite(Enb, 255);
-
+  analogWrite(Ena, 200);
+  analogWrite(Enb, 200);
 }
 
-void turnRight(){
-
+void turnRight() {
+  Serial.println("Turning right...");
   digitalWrite(In1, HIGH);
   digitalWrite(In2, LOW);
-
   digitalWrite(In3, HIGH);
   digitalWrite(In4, LOW);
-
-  analogWrite(Ena, 255);
-  analogWrite(Enb, 255);
-
+  analogWrite(Ena, 200);
+  analogWrite(Enb, 200);
 }
 
-void turnLeft(){
-
+void turnLeft() {
+  Serial.println("Turning left...");
   digitalWrite(In1, LOW);
   digitalWrite(In2, HIGH);
-
   digitalWrite(In3, LOW);
   digitalWrite(In4, HIGH);
-
-  analogWrite(Ena, 255);
-  analogWrite(Enb, 255);
-
+  analogWrite(Ena, 200);
+  analogWrite(Enb, 200);
 }
 
 void loop() {
-
-  moveAhead();
-  delay(1000);
-  long distance = checkAhead();
-  delay(100);
-  if (distance < 10){
-    moveBack();
-    delay(1000);
-
-    CheckRight();
-    long right = CheckRight();
-
-  }
-
-    if (right > 10){
-      
+  long distance = checkStraight();
+  
+  if (distance > 20) {
+    // Path is clear, move forward
+    moveAhead();
+    delay(200);
+  } else {
+    // Obstacle detected, stop and assess
+    stopMotors();
+    delay(200);
+    
+    // Check both directions
+    long rightDist = checkRight();
+    long leftDist = checkLeft();
+    
+    Serial.print("Right: ");
+    Serial.print(rightDist);
+    Serial.print(" cm | Left: ");
+    Serial.print(leftDist);
+    Serial.println(" cm");
+    
+    // Choose the direction with more space
+    if (rightDist > leftDist && rightDist > 20) {
+      // Turn right
       turnRight();
-      delay(500);
-
-    CheckLeft();
-    long left = CheckLeft();
-    }
-
-    if (left > 10){
-
+      delay(600);  // Adjust timing for ~90° turn
+      stopMotors();
+    } else if (leftDist > 20) {
+      // Turn left
       turnLeft();
-      delay(500);
-
+      delay(600);  // Adjust timing for ~90° turn
+      stopMotors();
+    } else {
+      // Both blocked, back up and try again
+      moveBack();
+      delay(800);
+      turnRight();
+      delay(800);
+      stopMotors();
     }
+    
+    delay(200);
   }
 }
-
-//hi
