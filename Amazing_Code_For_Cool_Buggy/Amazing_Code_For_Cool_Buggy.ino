@@ -132,12 +132,26 @@ void turnLeft() {
   analogWrite(Enb, 200);
 }
 
-void loop() {
-  long funny = checkAhead();
-  if (funny < 30){
-    moveAhead();
-    delay(2000);
-    moveBack();
+void mazeMode(){
+  long left = checkLeft();
+  long ahead = checkStraight();
+  if (left > 20){
+    turnLeft();
+    delay(500);
+    stopMotors();
   }
+  else if (ahead < 20){
+    turnRight();
+    delay(500);
+    stopMotors();
+  }
+  else{
+    moveAhead();
+    delay(500);
+    stopMotors();
+  }
+}
 
+void loop() {
+  mazeMode();
 }
