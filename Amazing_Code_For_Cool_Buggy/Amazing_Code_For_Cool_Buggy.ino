@@ -16,13 +16,13 @@ int TRG = 11;
 int ECHO = 12;
 
 // other variables
-int threshold = 12; //safe distance from wall
+int threshold = 25; //safe distance from wall
 int emergency_distance = 5;
-int right_speed = 200;
-int left_speed = 200;
-int turn_delay = 500;
-int push_delay = 500;
-int forward_delay = 500; //time between left checks
+int right_speed = 150;
+int left_speed = 255;
+int turn_delay = 1250;
+int push_delay = 1500;
+int forward_delay = 1500; //time between left checks
 int servo_turn_delay = 500;
 int default_angle = 0; //servo center position
 int left_angle = 60; //servo left position
@@ -57,7 +57,7 @@ long checkAhead() {
   digitalWrite(TRG, LOW);
   
 
-  long time = pulseIn(ECHO, HIGH); //revmoved the "30000" number parameter
+  long time = pulseIn(ECHO, HIGH, 100000); //revmoved the "30000" number parameter
   if (time == 0) {
     Serial.println("No echo");
     return 999;
@@ -149,6 +149,23 @@ void pushForward() {
 }
 
 void loop() {
+  moveAhead();
+  // //Test position 1: Straight
+  // Serial.print("Left: ");
+  // long dis = checkLeft();
+
+  // Serial.print("Straight: ");
+  // long dis2 = checkStraight();
+
+  // // Test position 2: Left
+  // // Serial.print("Left (60 deg): ");
+  // // long dis2 = checkLeft();
+  
+  // //Serial.println("----------------------------");
+  // delay(1000);
+}
+
+void temp() {
   //distance checks
   long straight_dis = checkStraight();
   long left_dis = checkLeft();
