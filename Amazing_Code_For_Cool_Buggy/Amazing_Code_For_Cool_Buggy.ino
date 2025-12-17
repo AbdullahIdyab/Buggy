@@ -24,6 +24,8 @@ int turn_delay = 500;
 int push_delay = 500;
 int forward_delay = 500; //time between left checks
 int servo_turn_delay = 500;
+int default_angle = 0; //servo center position
+int left_angle = 60; //servo left position
 
 void setup() {
   Serial.begin(9600);
@@ -70,13 +72,13 @@ long checkAhead() {
 }
 
 long checkStraight() {
-  myServo.write(0); 
+  myServo.write(default_angle); 
   delay(servo_turn_delay);
   return checkAhead();
 }
 
 long checkLeft() {
-  myServo.write(60); 
+  myServo.write(left_angle); 
   delay(servo_turn_delay);
   long dist = checkAhead();
   return dist;
