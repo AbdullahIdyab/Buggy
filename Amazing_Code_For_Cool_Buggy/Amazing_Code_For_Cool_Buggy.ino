@@ -15,6 +15,16 @@ int Enb = 9;
 int TRG = 11;
 int ECHO = 12;
 
+// other variables
+int threshold = 12; //safe distance from wall
+int emergency_distance = 5;
+int right_speed = 200;
+int left_speed = 200;
+int turn_delay = 500;
+int push_delay = 500;
+int forward_delay = 500; //time between left checks
+int servo_turn_delay = 500;
+
 void setup() {
   Serial.begin(9600);
   
@@ -45,7 +55,7 @@ long checkAhead() {
   digitalWrite(TRG, LOW);
   
 
-  long time = pulseIn(ECHO, HIGH, 30000);
+  long time = pulseIn(ECHO, HIGH); //revmoved the "30000" number parameter
   if (time == 0) {
     Serial.println("No echo");
     return 999;
@@ -60,28 +70,26 @@ long checkAhead() {
 }
 
 long checkStraight() {
-  myServo.write(90); 
-  delay(500);
+  myServo.write(0); 
+  delay(servo_turn_delay);
   return checkAhead();
 }
 
 long checkLeft() {
-  myServo.write(180); 
-  delay(500);
+  myServo.write(60); 
+  delay(servo_turn_delay);
   long dist = checkAhead();
-  myServo.write(90);  
-  delay(300);
   return dist;
 }
 
-long checkRight() {
-  myServo.write(0);  
-  delay(500);
-  long dist = checkAhead();
-  myServo.write(90); 
-  delay(300);
-  return dist;
-}
+// long checkRight() {
+//   myServo.write(0);  
+//   delay(500);
+//   long dist = checkAhead();
+//   myServo.write(90); 
+//   delay(300);
+//   return dist;
+// }
 
 void stopMotors() {
   digitalWrite(In1, LOW);
@@ -98,8 +106,8 @@ void moveAhead() {
   digitalWrite(In2, LOW);
   digitalWrite(In3, LOW);
   digitalWrite(In4, HIGH);
-  analogWrite(Ena, 200);
-  analogWrite(Enb, 200);
+  analogWrite(Ena, right_speed);
+  analogWrite(Enb, left_speed);
 }
 
 void moveBack() {
@@ -108,8 +116,8 @@ void moveBack() {
   digitalWrite(In2, HIGH);
   digitalWrite(In3, HIGH);
   digitalWrite(In4, LOW);
-  analogWrite(Ena, 200);
-  analogWrite(Enb, 200);
+  analogWrite(Ena, right_speed);
+  analogWrite(Enb, left_speed);
 }
 
 void turnRight() {
@@ -118,8 +126,8 @@ void turnRight() {
   digitalWrite(In2, LOW);
   digitalWrite(In3, HIGH);
   digitalWrite(In4, LOW);
-  analogWrite(Ena, 200);
-  analogWrite(Enb, 200);
+  analogWrite(Ena, right_speed);
+  analogWrite(Enb, left_speed);
 }
 
 void turnLeft() {
@@ -128,16 +136,55 @@ void turnLeft() {
   digitalWrite(In2, HIGH);
   digitalWrite(In3, LOW);
   digitalWrite(In4, HIGH);
-  analogWrite(Ena, 200);
-  analogWrite(Enb, 200);
+  analogWrite(Ena, right_speed);
+  analogWrite(Enb, left_speed);
+}
+
+void pushForward() {
+  moveAhead();
+  delay(push_delay);
+  stopMotors();
 }
 
 void loop() {
-  long funny = checkAhead();
-  if (funny < 30){
-    moveAhead();
-    delay(2000);
-    moveBack();
+  //distance checks
+  long straight_dis = checkStraight();
+  long left_dis = checkLeft();
+
+
+  //emergency case check
+  if (straight_dis < emergency_distance) {
+    if (left_dis < emergency_distance) {
+      moveBack();
+      delay(250);    // Give it enough room to move away
+      stopMotors();
+      turnRight();   // Pivot away from the current heading
+      delay(250);
+      stopMotors();
+    } else {
+      moveBack();
+      delay(250);    // Give it enough room to move away
+      stopMotors();
+    }
+    return; //restart loop
   }
 
+  //Algorithm
+  if (left_dis > threshold){
+    pushForward();
+    turnLeft();
+    delay(turn_delay);
+    stopMotors();
+    pushForward();
+  } else {
+      if (straight_dis > threshold){
+      moveAhead();
+      delay(forward_delay);
+      stopMotors();
+      } else {
+        turnRight();
+        delay(turn_delay);
+        stopMotors();
+      }
+  }
 }
