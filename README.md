@@ -2,7 +2,7 @@
 
 An Arduino-based autonomous robot capable of navigating through mazes using real-time spatial mapping and obstacle avoidance. 
 
-![Buggy Image](Buggy/IMG_3062.jpeg)
+![Buggy Image](IMG_3062.jpeg)
 
 ## Hardware Components
 * **Microcontroller:** Arduino (Uno/Nano)
